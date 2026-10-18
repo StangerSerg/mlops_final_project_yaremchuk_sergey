@@ -1,0 +1,8 @@
+.idea
+.venv
+.gitkeep
+catboost_info
+*.parquet
+*.pkl
+__pycache__
+*.csv

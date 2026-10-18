@@ -1,0 +1,27 @@
+{
+  "events_path": "data/raw/events.csv",
+  "item_props_path": "data/raw/item_properties_part1.csv",
+  "out_item_feats_path":  "data/prepared/item_features.parquet",
+  "out_train_path":  "data/prepared/data_for_training.parquet",
+  "window_hours": 24,
+  "output_model_path": "models/ranker.pkl",
+  "target": "target",
+  "features": ["views", "purchases", "ctr", "hour", "weekday", "categoryid", "available"],
+  "split_params": {
+    "random_state": 42,
+    "test_size": 0.2
+  },
+  "model_params": {
+    "depth": 4,
+    "learning_rate": 0.1,
+    "loss_function": "Logloss",
+    "verbose": false
+  },
+  "required_columns": [
+    "views",
+    "purchases",
+    "categoryid",
+    "available"
+  ],
+  "numeric_columns": []
+}

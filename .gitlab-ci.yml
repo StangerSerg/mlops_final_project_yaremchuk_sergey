@@ -1,0 +1,96 @@
+# Для работы CI/CD необходимо заполнить этот файл
+# include: можно переиспользовать .setup_venv.yml из модуля про практики DevOps 
+
+#default:
+#  tags: [k8s] # Тег для запуска ранера
+#  image: python:3.12-bookworm # Образ контейнера, используемого в раннерах
+
+# stages: # Подумай, какие стадии должны быть (линтеры, тесты, билд образа)
+
+# lint: - ruff как линтер и форматер \ mypy для строгой проверки типов
+
+# test: - pytest отличный вариант для unit тестирования
+
+# build: kaniko считается deprecated, попробуй buildkit
+
+default:
+  tags: [k8s]
+  image: python:3.12-bookworm
+
+# Локальные переменные для работы манифеста.
+variables:
+  VENV_PATH: "$CI_PROJECT_DIR/.venv"
+  PYTHON_VERSION: "3.12"
+
+stages:
+  - lint
+  - test
+  - train
+  - build
+
+ #Якорь с установкой и активацией окружения
+.setup_venv: &setup_venv
+  before_script:
+    - export PATH="$HOME/.local/bin:$VENV_PATH/bin:$PATH"
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - uv venv --python $PYTHON_VERSION $VENV_PATH
+    - source $VENV_PATH/bin/activate
+    - uv pip install -r requirements.txt
+
+linter:
+  stage: lint
+  <<: *setup_venv
+  script:
+    - ruff check . # Запускаем линтер
+
+formater:
+  stage: lint
+  <<: *setup_venv
+  script:
+    - ruff format --check . # Запускам форматтер
+
+mypy_check:
+  stage: lint
+  <<: *setup_venv
+  script:
+    - mypy . # Запускаем статическую проверку типов
+
+pytest:
+  stage: test
+  <<: *setup_venv
+  script:
+    - pytest . # Запускаем тесты
+
+train_model:
+  stage: train
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  <<: *setup_venv
+  script:
+    - cd src/service
+    - python3 train_and_save_model.py
+    - mv model.pkl $CI_PROJECT_DIR/model.pkl
+  artifacts: # Сохраняем артефакт работы джобы с обучением в виде файла model.pkl
+    paths:
+      - model.pkl
+    expire_in: 15 minutes
+  retry: # Перезапускаем джобу если были какие-либо проблемы
+    max: 2
+
+build_image:
+  stage: build
+  image:
+    name: moby/buildkit:rootless
+    entrypoint: [""]
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+  before_script:
+    - mkdir -p ~/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > ~/.docker/config.json
+  script:
+    - |
+      buildctl-daemonless.sh build \
+        --frontend dockerfile.v0 \
+        --local context=. \
+        --local dockerfile=. \
+        --output type=image,name=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA,push=true

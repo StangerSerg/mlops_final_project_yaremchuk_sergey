@@ -1,0 +1,46 @@
+# Заполни меня
+[project]
+name = "mlops_final_project_yaremchuk_sergey"
+version = "0.0.1"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.12.*"
+dependencies = [
+    "awscli~=1.42.50",
+    "boto3~=1.40.69",
+    "catboost~=1.2.8",
+    "fastapi~=0.115.12",
+    "gensim~=4.4.0",
+    "gunicorn~=23.0.0",
+    "httpx~=0.28.1",
+    "joblib~=1.5.2",
+    "mypy~=1.17.1",
+    "numpy~=2.2.5",
+    "pandas~=2.2.3",
+    "pandera==0.24.0",
+    "pyarrow~=22.0.0",
+    "pydantic>=2.13.5",
+    "pytest~=9.0.0",
+    "pytest-mock~=3.15.1",
+    "ruff>=0.12.10",
+    "scikit-learn~=1.6.1",
+    "uvicorn~=0.34.2",
+]
+
+[tool.mypy]
+python_version = "3.11"
+disallow_untyped_defs = true
+warn_return_any = true
+ignore_missing_imports = true
+plugins = ["pydantic.mypy", "pandera.mypy"]
+
+
+[ruff]
+
+
+[pytest]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.10",
+]
