@@ -1,0 +1,82 @@
+groups:
+  # ---------- сервис жив, отвечает и не деградирует ----------
+  - name: recsys-service
+    rules:
+      - alert: RecsysApiDown
+        expr: up{job="recsys-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Инференс-сервис недоступен"
+          description: "Prometheus не может снять /metrics с {{ $labels.instance }} больше минуты."
+
+      - alert: RecsysModelNotLoaded
+        expr: recsys_model_loaded == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Модель не загружена"
+          description: "Сервис работает, но ranker/item_features не загружены — инференс отвечает 503."
+
+      - alert: RecsysHigh5xxRate
+        expr: |
+          sum(rate(http_requests_total{job="recsys-api", status=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_requests_total{job="recsys-api"}[5m])), 1e-9)
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Доля ответов 5xx больше 5%"
+          description: "Доля 5xx за 5 минут: {{ $value | humanizePercentage }}."
+
+      - alert: RecsysHighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{
+              job="recsys-api", handler=~"/predict_purchase|/v2/models/.*/infer"}[5m]))
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 latency инференса больше 500 мс"
+          description: "p95 = {{ $value | humanizeDuration }}."
+
+  # ---------- поведение модели и пользователей ----------
+  - name: recsys-model
+    rules:
+      - alert: RecsysUnknownItemsRate
+        expr: |
+          sum(rate(recsys_prediction_errors_total{reason="unknown_item"}[10m]))
+            / clamp_min(
+                sum(rate(recsys_predictions_total[10m]))
+                + sum(rate(recsys_prediction_errors_total{reason="unknown_item"}[10m])),
+                1e-9)
+          > 0.2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Больше 20% запросов к неизвестным товарам"
+          description: "Feature store устарел или изменился каталог: {{ $value | humanizePercentage }}."
+
+      - alert: RecsysScoreDrift
+        # средний score за час отклонился от среднего за сутки больше чем на 50%
+        expr: |
+          (
+            abs(
+              sum(rate(recsys_prediction_score_sum[1h])) / sum(rate(recsys_prediction_score_count[1h]))
+              - sum(rate(recsys_prediction_score_sum[24h])) / sum(rate(recsys_prediction_score_count[24h]))
+            )
+            / (sum(rate(recsys_prediction_score_sum[24h])) / sum(rate(recsys_prediction_score_count[24h])))
+          ) > 0.5
+          and on() sum(increase(recsys_prediction_score_count[1h])) > 100
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Дрейф распределения score"
+          description: "Средний score за час отличается от суточного на {{ $value | humanizePercentage }}."

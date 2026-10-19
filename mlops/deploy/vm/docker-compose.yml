@@ -1,0 +1,114 @@
+# Инференс-сервис на ВМ + стек мониторинга.
+#
+#   recsys-api    — FastAPI (порт 8000); при старте скачивает ranker.pkl и
+#                   item_features.parquet из S3 (кэш в volume — fallback)
+#   prometheus    — сбор метрик /metrics + правила алертов (9090)
+#   alertmanager  — маршрутизация алертов (9093)
+#   loki/promtail — сбор логов контейнеров (JSON-логи сервиса)
+#   grafana       — дашборд «Retail RecSys» (3000)
+#
+# Запуск из корня репозитория (параметры — из .env):
+#   docker compose -f mlops/deploy/vm/docker-compose.yml --env-file .env up -d
+# APP_IMAGE — образ из GitLab Registry; без него образ собирается локально.
+
+name: recsys
+
+services:
+  recsys-api:
+    image: ${APP_IMAGE:-recsys-api:local}
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT_HOST:-8000}:8000"
+    environment:
+      APP_PORT: "8000"
+      LOG_FORMAT: json
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-https://storage.yandexcloud.net}
+      S3_REGION: ${S3_REGION:-ru-central1}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_PREFIX: ${S3_PREFIX:-yaremchuk_sergey_project}
+      S3_PROCESSED_DIR: ${S3_PROCESSED_DIR:-processed_data}
+      S3_MODELS_DIR: ${S3_MODELS_DIR:-models}
+      MODEL_S3_KEY: ${MODEL_S3_KEY:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      MODEL_NAME: ${MODEL_NAME:-ranker}
+    volumes:
+      # кэш артефактов: если S3 недоступен при рестарте, берутся последние скачанные
+      - api-models:/app/models
+      - api-data:/app/data
+    labels:
+      logging: promtail
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../../monitoring/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - recsys-api
+      - alertmanager
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    volumes:
+      - ../../monitoring/alertmanager:/etc/alertmanager:ro
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.1.1
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ../../monitoring/promtail:/etc/promtail:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/recsys.json
+    volumes:
+      - ../../grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+    restart: unless-stopped
+
+volumes:
+  api-models:
+  api-data:
+  prometheus-data:
+  loki-data:
+  grafana-data:

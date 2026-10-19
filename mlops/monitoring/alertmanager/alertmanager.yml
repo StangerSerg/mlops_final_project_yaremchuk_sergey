@@ -1,0 +1,14 @@
+# Алерты видны в UI Alertmanager (:9093) и на дашборде Grafana.
+# Для доставки в мессенджер добавьте в receiver, например:
+#   telegram_configs:
+#     - bot_token: <token>
+#       chat_id: <chat id>
+route:
+  receiver: default
+  group_by: ["alertname"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: default

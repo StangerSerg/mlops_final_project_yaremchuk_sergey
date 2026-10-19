@@ -1,10 +1,10 @@
 {
-  "events_path": "data/raw/events.csv",
-  "item_props_path": "data/raw/item_properties_part1.csv",
-  "out_item_feats_path":  "data/prepared/item_features.parquet",
-  "out_train_path":  "data/prepared/data_for_training.parquet",
+  "events_file": "events.csv",
+  "item_props_file": "item_properties_part1.csv",
+  "item_features_file": "item_features.parquet",
+  "train_file": "data_for_training.parquet",
+  "model_file": "ranker.pkl",
   "window_hours": 24,
-  "output_model_path": "models/ranker.pkl",
   "target": "target",
   "features": ["views", "purchases", "ctr", "hour", "weekday", "categoryid", "available"],
   "split_params": {
@@ -22,6 +22,5 @@
     "purchases",
     "categoryid",
     "available"
-  ],
-  "numeric_columns": []
+  ]
 }

@@ -91,10 +91,15 @@ def test_load_parquet_data_preserves_columns(tmp_path: Path) -> None:
 
 
 def test_preprocess_events_lowercases_columns() -> None:
-    df = pd.DataFrame({
-        "ItemID": [1], "Property": ["x"], "Value": [1],
-        "Event": ["view"], "Timestamp": [0],
-    })
+    df = pd.DataFrame(
+        {
+            "ItemID": [1],
+            "Property": ["x"],
+            "Value": [1],
+            "Event": ["view"],
+            "Timestamp": [0],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -102,10 +107,15 @@ def test_preprocess_events_lowercases_columns() -> None:
 
 
 def test_preprocess_events_strips_column_whitespace() -> None:
-    df = pd.DataFrame({
-        " itemid ": [1], "property": ["x"], "value": [1],
-        "event": ["view"], "timestamp": [0],
-    })
+    df = pd.DataFrame(
+        {
+            " itemid ": [1],
+            "property": ["x"],
+            "value": [1],
+            "event": ["view"],
+            "timestamp": [0],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -113,10 +123,15 @@ def test_preprocess_events_strips_column_whitespace() -> None:
 
 
 def test_preprocess_events_converts_timestamp_to_datetime() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["x"], "value": [1],
-        "event": ["view"], "timestamp": [1_600_000_000_000],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["x"],
+            "value": [1],
+            "event": ["view"],
+            "timestamp": [1_600_000_000_000],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -124,10 +139,15 @@ def test_preprocess_events_converts_timestamp_to_datetime() -> None:
 
 
 def test_preprocess_events_purchase_event_is_true() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["x"], "value": [1],
-        "event": ["purchase"], "timestamp": [0],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["x"],
+            "value": [1],
+            "event": ["purchase"],
+            "timestamp": [0],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -135,10 +155,15 @@ def test_preprocess_events_purchase_event_is_true() -> None:
 
 
 def test_preprocess_events_transaction_event_is_true() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["x"], "value": [1],
-        "event": ["transaction"], "timestamp": [0],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["x"],
+            "value": [1],
+            "event": ["transaction"],
+            "timestamp": [0],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -146,10 +171,15 @@ def test_preprocess_events_transaction_event_is_true() -> None:
 
 
 def test_preprocess_events_view_event_is_false() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["x"], "value": [1],
-        "event": ["view"], "timestamp": [0],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["x"],
+            "value": [1],
+            "event": ["view"],
+            "timestamp": [0],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -157,10 +187,15 @@ def test_preprocess_events_view_event_is_false() -> None:
 
 
 def test_preprocess_events_event_case_insensitive() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["x"], "value": [1],
-        "event": ["PURCHASE"], "timestamp": [0],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["x"],
+            "value": [1],
+            "event": ["PURCHASE"],
+            "timestamp": [0],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -168,10 +203,16 @@ def test_preprocess_events_event_case_insensitive() -> None:
 
 
 def test_preprocess_events_transactionid_makes_purchase_true() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["x"], "value": [1],
-        "event": ["view"], "timestamp": [0], "transactionid": [42],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["x"],
+            "value": [1],
+            "event": ["view"],
+            "timestamp": [0],
+            "transactionid": [42],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -179,10 +220,15 @@ def test_preprocess_events_transactionid_makes_purchase_true() -> None:
 
 
 def test_preprocess_events_adds_is_purchase_event_column() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["x"], "value": [1],
-        "event": ["view"], "timestamp": [0],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["x"],
+            "value": [1],
+            "event": ["view"],
+            "timestamp": [0],
+        }
+    )
 
     result = preprocess_events(df)
 
@@ -190,17 +236,23 @@ def test_preprocess_events_adds_is_purchase_event_column() -> None:
 
 
 def _props_df() -> pd.DataFrame:
-    return pd.DataFrame({
-        "itemid": [1, 1, 2],
-        "property": ["categoryid", "available", "categoryid"],
-        "value": ["10", "1", "20"],
-    })
+    return pd.DataFrame(
+        {
+            "itemid": [1, 1, 2],
+            "property": ["categoryid", "available", "categoryid"],
+            "value": ["10", "1", "20"],
+        }
+    )
 
 
 def test_preprocess_properties_lowercases_columns() -> None:
-    df = pd.DataFrame({
-        "ItemID": [1], "Property": ["categoryid"], "Value": ["10"],
-    })
+    df = pd.DataFrame(
+        {
+            "ItemID": [1],
+            "Property": ["categoryid"],
+            "Value": ["10"],
+        }
+    )
 
     result = preprocess_properties(df)
 
@@ -208,10 +260,14 @@ def test_preprocess_properties_lowercases_columns() -> None:
 
 
 def test_preprocess_properties_keeps_only_interaction_columns() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["categoryid"], "value": ["10"],
-        "extra": ["junk"],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["categoryid"],
+            "value": ["10"],
+            "extra": ["junk"],
+        }
+    )
 
     result = preprocess_properties(df)
 
@@ -219,10 +275,13 @@ def test_preprocess_properties_keeps_only_interaction_columns() -> None:
 
 
 def test_preprocess_properties_filters_unknown_properties() -> None:
-    df = pd.DataFrame({
-        "itemid": [1, 1], "property": ["categoryid", "brand"],
-        "value": ["10", "acme"],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1, 1],
+            "property": ["categoryid", "brand"],
+            "value": ["10", "acme"],
+        }
+    )
 
     result = preprocess_properties(df)
 
@@ -248,9 +307,13 @@ def test_preprocess_properties_available_is_int() -> None:
 
 
 def test_preprocess_properties_missing_categoryid_defaults_to_minus_one() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["available"], "value": ["1"],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["available"],
+            "value": ["1"],
+        }
+    )
 
     result = preprocess_properties(df)
 
@@ -258,9 +321,13 @@ def test_preprocess_properties_missing_categoryid_defaults_to_minus_one() -> Non
 
 
 def test_preprocess_properties_missing_available_defaults_to_zero() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["categoryid"], "value": ["10"],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["categoryid"],
+            "value": ["10"],
+        }
+    )
 
     result = preprocess_properties(df)
 
@@ -268,9 +335,13 @@ def test_preprocess_properties_missing_available_defaults_to_zero() -> None:
 
 
 def test_preprocess_properties_invalid_categoryid_becomes_minus_one() -> None:
-    df = pd.DataFrame({
-        "itemid": [1], "property": ["categoryid"], "value": ["abc"],
-    })
+    df = pd.DataFrame(
+        {
+            "itemid": [1],
+            "property": ["categoryid"],
+            "value": ["abc"],
+        }
+    )
 
     result = preprocess_properties(df)
 
@@ -287,10 +358,12 @@ def test_preprocess_properties_does_not_mutate_input() -> None:
 
 
 def _ctr_df() -> pd.DataFrame:
-    return pd.DataFrame({
-        "itemid": [1, 2, 3],
-        "ctr": [0.5, 1.5, 0.9],
-    })
+    return pd.DataFrame(
+        {
+            "itemid": [1, 2, 3],
+            "ctr": [0.5, 1.5, 0.9],
+        }
+    )
 
 
 def test_drop_inconsistent_ctr_removes_high_ctr_rows() -> None:
@@ -370,20 +443,25 @@ def test_drop_inconsistent_ctr_works_without_itemid_column() -> None:
 
 # ---------- build_target ----------
 
+
 def _views() -> pd.DataFrame:
-    return pd.DataFrame({
-        "timestamp": pd.to_datetime(["2024-01-01 10:00:00"]),
-        "visitorid": [1],
-        "itemid": [100],
-    })
+    return pd.DataFrame(
+        {
+            "timestamp": pd.to_datetime(["2024-01-01 10:00:00"]),
+            "visitorid": [1],
+            "itemid": [100],
+        }
+    )
 
 
 def _purchases(ts: str) -> pd.DataFrame:
-    return pd.DataFrame({
-        "timestamp": pd.to_datetime([ts]),
-        "visitorid": [1],
-        "itemid": [100],
-    })
+    return pd.DataFrame(
+        {
+            "timestamp": pd.to_datetime([ts]),
+            "visitorid": [1],
+            "itemid": [100],
+        }
+    )
 
 
 def test_build_target_adds_target_column() -> None:
@@ -405,11 +483,13 @@ def test_build_target_purchase_outside_window_is_zero() -> None:
 
 
 def test_build_target_no_purchase_is_zero() -> None:
-    empty = pd.DataFrame({
-        "timestamp": pd.to_datetime([]),
-        "visitorid": [],
-        "itemid": [],
-    })
+    empty = pd.DataFrame(
+        {
+            "timestamp": pd.to_datetime([]),
+            "visitorid": [],
+            "itemid": [],
+        }
+    )
 
     result = build_target(_views(), empty, window_hours=24)
 
@@ -436,12 +516,15 @@ def test_build_target_preserves_row_count() -> None:
 
 # ---------- compute_item_popularity ----------
 
+
 def _events() -> pd.DataFrame:
-    return pd.DataFrame({
-        "itemid": [1, 1, 1, 2],
-        "event": ["view", "view", "purchase", "view"],
-        "is_purchase_event": [False, False, True, False],
-    })
+    return pd.DataFrame(
+        {
+            "itemid": [1, 1, 1, 2],
+            "event": ["view", "view", "purchase", "view"],
+            "is_purchase_event": [False, False, True, False],
+        }
+    )
 
 
 def test_compute_item_popularity_has_views_column() -> None:
@@ -482,6 +565,7 @@ def test_compute_item_popularity_no_purchases_zero_filled() -> None:
 
 # ---------- report_ctr_anomalies ----------
 
+
 def test_report_ctr_anomalies_empty_when_no_anomalies() -> None:
     views = pd.DataFrame({"itemid": [1], "ctr": [0.5]})
 
@@ -508,26 +592,33 @@ def test_report_ctr_anomalies_sorted_descending() -> None:
 
 # ---------- prepare_features ----------
 
+
 def _events_full() -> pd.DataFrame:
-    return pd.DataFrame({
-        "timestamp": pd.to_datetime([
-            "2024-01-01 10:00:00",
-            "2024-01-01 11:00:00",
-            "2024-01-01 12:00:00",
-        ]),
-        "visitorid": [1, 1, 2],
-        "itemid": [100, 100, 200],
-        "event": ["view", "purchase", "view"],
-        "is_purchase_event": [False, True, False],
-    })
+    return pd.DataFrame(
+        {
+            "timestamp": pd.to_datetime(
+                [
+                    "2024-01-01 10:00:00",
+                    "2024-01-01 11:00:00",
+                    "2024-01-01 12:00:00",
+                ]
+            ),
+            "visitorid": [1, 1, 2],
+            "itemid": [100, 100, 200],
+            "event": ["view", "purchase", "view"],
+            "is_purchase_event": [False, True, False],
+        }
+    )
 
 
 def _item_props() -> pd.DataFrame:
-    return pd.DataFrame({
-        "itemid": [100, 200],
-        "categoryid": [10, 20],
-        "available": [1, 1],
-    })
+    return pd.DataFrame(
+        {
+            "itemid": [100, 200],
+            "categoryid": [10, 20],
+            "available": [1, 1],
+        }
+    )
 
 
 def test_prepare_features_returns_two_dataframes() -> None:
@@ -621,5 +712,23 @@ def test_prepare_features_missing_itemid_in_props_raises() -> None:
 def test_prepare_features_returns_only_views_in_views_df() -> None:
     _, views = prepare_features(_events_full(), _item_props(), 24)
 
-    # purchase-события не должны попадать в views (visitorid=1, itemid=100 покупка)
-    assert not views["is_purchase_event"].any()
+    # в выборку попадают только 2 просмотра, покупка (visitorid=1, itemid=100)
+    # используется лишь для таргета
+    assert len(views) == 2
+    assert views["target"].tolist() == [1, 0]
+
+
+def test_compute_item_popularity_counts_are_float_without_missing() -> None:
+    # у каждого товара есть и просмотр, и покупка -> NaN после concat нет
+    events = pd.DataFrame(
+        {
+            "itemid": [1, 1],
+            "event": ["view", "purchase"],
+            "is_purchase_event": [False, True],
+        }
+    )
+
+    result = compute_item_popularity(events)
+
+    assert result["views"].dtype == float
+    assert result["purchases"].dtype == float

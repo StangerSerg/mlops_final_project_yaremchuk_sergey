@@ -1,72 +1,60 @@
 import logging
-from pathlib import Path
 
 import joblib
-import pandas as pd
 
 from src.data.ingestion import load_parquet_data
 from src.data.validation import validate_data
 from src.models.evaluation import evaluate_model
 from src.models.training import split_to_train_test, train_model
-from src.schemas.output_schemas import Config
-from src.utils.config import get_training_paths, load_config
+from src.utils.config import load_config
 from src.utils.logging import setup_logger
+from src.utils.settings import get_settings
+from src.utils.storage import ArtifactStorage
+
+logger = logging.getLogger(__name__)
 
 
 def train() -> None:
     """
-    Обучает модель машинного обучения на основе конфигурации.
+    Обучает модель на подготовленных данных.
     Последовательно выполняет:
-      1. Загрузка данных
-      2. Обучение модели
-      3. Сохранение модели
-      4. Оценка качества модели
+      1. Загрузка данных (S3 processed_data или локальный data/prepared)
+      2. Валидация данных
+      3. Обучение и оценка модели
+      4. Сохранение модели (S3 models или локальный models/)
     """
-    setup_logger()
-    logger = logging.getLogger(__name__)
-    logger.info("Старт обучения модели")
+    settings = get_settings()
+    config = load_config(settings.config_path)
+    storage = ArtifactStorage(settings)
+    logger.info("Старт обучения модели (S3: %s)", storage.s3_enabled)
 
-    # загрузка настроек
-    config: Config = load_config()
-    logger.info("Настройки успешно загружены")
+    df = load_parquet_data(storage.fetch("processed", config.train_file))
+    logger.info("Данные загружены, размер: %s", df.shape)
 
-    # получение путей
-    data_path: Path
-    model_path: Path
-    model_path, data_path = get_training_paths(config)
-    logger.info(f"Пути успешно загружены: {data_path=}, {model_path=}")
-
-    # загрузка данных
-    df = load_parquet_data(data_path)
-    logger.info(f"Данные успешно загружены, размер: {df.shape}")
-
-    # Валидация данных
-    required_columns: list[str] = config.required_columns
-    validate_data(df, required_columns)
+    validate_data(df, config.required_columns)
     logger.info("Данные прошли валидацию")
 
-    # создаем выборки для обучения и проверки
-    features = config.features
-    X: pd.DataFrame = df[features]
-    y: pd.Series = df[config.target]
-    x_train, x_test, y_train, y_test = split_to_train_test(X, y, config.split_params)
+    x = df[config.features]
+    y = df[config.target]
+    x_train, x_test, y_train, y_test = split_to_train_test(x, y, config.split_params)
 
-    # обучение и оценка модели
     model = train_model(x_train, y_train, config.model_params)
     metrics = evaluate_model(model, x_test, y_test)
     logger.info("Модель обучена")
-    if metrics and isinstance(metrics, dict):
-        for k, v in metrics.items():
-            logger.info(f"{k:>10}: {v:.6f}")
-    else:
-        logger.info(f"Метрики получены неверно - {metrics}")
+    for name, value in metrics.items():
+        logger.info("%10s: %.6f", name, value)
 
-    # сохранение модели
+    model_path = storage.local_path("models", config.model_file)
+    model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, model_path)
-    logger.info(f"Модель сохранена по пути: {model_path}")
+    uri = storage.publish("models", config.model_file)
+    logger.info("Модель сохранена: %s", uri)
 
-    logger.info("Обучение завершено успешно")
+
+def main() -> None:
+    setup_logger(get_settings().log_path)
+    train()
 
 
 if __name__ == "__main__":
-    train()
+    main()

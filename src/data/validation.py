@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.schemas.input_schemas import training_schema
+from src.schemas.data import training_schema
 
 
 def validate_data(

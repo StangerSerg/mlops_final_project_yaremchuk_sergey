@@ -70,17 +70,16 @@ def test_validate_data_propagates_schema_error() -> None:
     df = pd.DataFrame({"a": [1]})
 
     with patch.object(
-        validation_module.training_schema, "validate",
+        validation_module.training_schema,
+        "validate",
         side_effect=ValueError("schema failed"),
     ):
         with pytest.raises(ValueError, match="schema failed"):
             validate_data(df, ["a"])
 
 
-def test_validate_data_returns_none_on_success() -> None:
+def test_validate_data_does_not_raise_on_valid_data() -> None:
     df = pd.DataFrame({"a": [1]})
 
     with patch.object(validation_module.training_schema, "validate", MagicMock()):
-        result = validate_data(df, ["a"])
-
-    assert result is None
+        validate_data(df, ["a"])

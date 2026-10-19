@@ -1,6 +1,6 @@
-from pandera import Check, Column, DataFrameSchema
+from pandera.pandas import Check, Column, DataFrameSchema
 
-training_schema = DataFrameSchema(  # type: ignore[no-untyped-call]
+training_schema = DataFrameSchema(
     columns={
         "timestamp": Column("datetime64[ns]"),
         "visitorid": Column(int, Check.greater_than_or_equal_to(0)),

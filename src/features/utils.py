@@ -2,9 +2,7 @@ import pandas as pd
 
 
 def extract_interactions(
-    events: pd.DataFrame,
-    mask: pd.Series,
-    interaction_columns: list[str]
+    events: pd.DataFrame, mask: pd.Series, interaction_columns: list[str]
 ) -> pd.DataFrame:
     """Выбирает из событий нужные колонки по булевой маске.
 

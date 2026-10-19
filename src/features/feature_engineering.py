@@ -5,17 +5,13 @@ import pandas as pd
 
 from src.data.preprocessing import drop_inconsistent_ctr
 from src.features.utils import extract_interactions
-from src.utils.logging import setup_logger
 
 INTERACTION_COLUMNS = ["timestamp", "visitorid", "itemid"]
-setup_logger()
 logger = logging.getLogger(__name__)
 
 
 def prepare_features(
-    events: pd.DataFrame,
-    item_props: pd.DataFrame,
-    window_hours: int
+    events: pd.DataFrame, item_props: pd.DataFrame, window_hours: int
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Собирает признаки для обучения модели ранжирования товаров.
 
@@ -60,14 +56,10 @@ def prepare_features(
         Это позволяет отличать «нет данных» от реальных значений.
     """
     views = extract_interactions(
-        events,
-        events["event"].str.lower() == "view",
-        INTERACTION_COLUMNS
+        events, events["event"].str.lower() == "view", INTERACTION_COLUMNS
     )
     purchases = extract_interactions(
-        events,
-        events["is_purchase_event"],
-        INTERACTION_COLUMNS
+        events, events["is_purchase_event"], INTERACTION_COLUMNS
     )
 
     views = build_target(views, purchases, window_hours=window_hours)
@@ -94,7 +86,7 @@ def build_target(
     views: pd.DataFrame, purchases: pd.DataFrame, window_hours: int = 24
 ) -> pd.DataFrame:
     """Создаёт целевую переменную: купил ли пользователь товар
-     в течение 24 часов после просмотра.
+    в течение 24 часов после просмотра.
     """
     window = pd.Timedelta(hours=window_hours)
 
@@ -123,7 +115,9 @@ def compute_item_popularity(events: pd.DataFrame) -> pd.DataFrame:
         events[events["is_purchase_event"]].groupby("itemid").size().rename("purchases")
     )
 
-    df = pd.concat([views, buys], axis=1).fillna(0)
+    # Явно float: без NaN после concat счётчики остались бы int64,
+    # а схема обучающей выборки ожидает float.
+    df = pd.concat([views, buys], axis=1).fillna(0).astype(float)
     df["ctr"] = df["purchases"] / np.maximum(df["views"], 1)
     df = df.reset_index()
     df = drop_inconsistent_ctr(df, logger, "ctr")
@@ -133,8 +127,8 @@ def compute_item_popularity(events: pd.DataFrame) -> pd.DataFrame:
 
 def report_ctr_anomalies(views: pd.DataFrame) -> pd.DataFrame:
     """Выводит в консоль все строки с ctr > 1
-     и логирует статистику по уникальным itemid.
-     """
+    и логирует статистику по уникальным itemid.
+    """
     anomalies = (
         views[views["ctr"] > 1]
         .sort_values("ctr", ascending=False)

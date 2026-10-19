@@ -16,7 +16,7 @@ def evaluate_model(
     model: CatBoostClassifier, X: pd.DataFrame, y: pd.Series
 ) -> dict[str, float]:
     """
-    Вычисляет RMSE для оценки качества модели.
+    Вычисляет метрики качества бинарного классификатора на выборке.
 
     Args:
         model: Обученная модель.
@@ -43,4 +43,4 @@ def evaluate_model(
         "brier":     brier_score_loss(y, proba),
     }
 
-    return metrics
+    return {name: float(value) for name, value in metrics.items()}

@@ -1,0 +1,5 @@
+# Зависимости src/ для DAG препроцессинга (pandas, numpy, boto3 и
+# провайдер amazon уже есть в образе apache/airflow).
+pyarrow
+pandera==0.24.0
+pydantic-settings>=2.10

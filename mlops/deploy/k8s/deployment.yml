@@ -1,0 +1,123 @@
+# Инференс-сервис в Kubernetes.
+#
+# init-контейнер fetch-artifacts скачивает из S3 модель (ranker.pkl) и
+# признаки товаров (item_features.parquet) в общий emptyDir; основной
+# контейнер api читает их локально (ключей S3 у него нет).
+#
+# __IMAGE__ подставляет deploy.sh (образ из GitLab Container Registry).
+# ConfigMap recsys-config и Secret recsys-s3 deploy.sh создаёт из .env.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recsys-api
+  labels:
+    app.kubernetes.io/name: recsys-api
+    app.kubernetes.io/part-of: retail-recsys
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: recsys-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: recsys-api
+        app.kubernetes.io/part-of: retail-recsys
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: /metrics
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: fetch-artifacts
+          image: __IMAGE__
+          command: ["python", "-m", "scripts.fetch_artifacts"]
+          envFrom:
+            - configMapRef:
+                name: recsys-config
+            - secretRef:
+                name: recsys-s3
+          env:
+            - name: LOCAL_MODELS_DIR
+              value: /artifacts/models
+            - name: LOCAL_PROCESSED_DIR
+              value: /artifacts/prepared
+            - name: LOG_PATH
+              value: /tmp/fetch-artifacts.log
+          volumeMounts:
+            - name: artifacts
+              mountPath: /artifacts
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+      containers:
+        - name: api
+          image: __IMAGE__
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: recsys-config
+          env:
+            - name: APP_PORT
+              value: "8000"
+            - name: LOCAL_MODELS_DIR
+              value: /artifacts/models
+            - name: LOCAL_PROCESSED_DIR
+              value: /artifacts/prepared
+            - name: LOG_PATH
+              value: /app/logs/app.log
+          volumeMounts:
+            - name: artifacts
+              mountPath: /artifacts
+              readOnly: true
+            - name: logs
+              mountPath: /app/logs
+          startupProbe:
+            httpGet:
+              path: /v2/health/live
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /v2/health/ready
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /v2/health/live
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: artifacts
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: logs
+          emptyDir:
+            sizeLimit: 256Mi
